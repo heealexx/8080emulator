@@ -1,5 +1,94 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+
+typedef struct ConditionCodes{
+	uint8_t z:1;
+	uint8_t s:1;
+	uint8_t p:1;
+	uint8_t cy:1;
+	uint8_t ac:1;
+	uint8_t pad:3;
+} ConditionCodes;
+
+typedef struct State8080{
+	uint8_t a;
+	uint8_t b;
+	uint8_t c;
+	uint8_t d;
+	uint8_t e;
+	uint8_t h;
+	uint8_t l;
+	uint16_t sp;
+	uint16_t pc;
+	uint8_t *memory;
+	struct ConditionCodes cc;
+	uint8_t int_enable;
+} State8080;
+
+void UnimplementedInstruction(State8080* state){
+
+	state->pc -= 1;
+	printf("Error: unimplemented instruction\n");
+	exit(1);
+
+}
+
+int zspflag(State8080* state, uint16_t answer){
+	
+	if((answer & 0xff) == 0){
+		state->cc.z = 1;
+	}else{
+		state->cc.z = 0;
+	}
+
+	if(answer & 0x80){
+		state->cc.s = 1;
+	}else{
+		state->cc.s = 0;
+	}
+
+	if(answer % 2 == 0){
+		state->cc.p = 1;
+	}else{
+		state->cc.p = 0;
+	}
+
+	return 0;
+}
+		
+void Emulate8080Op(State8080* state){
+
+	unsigned char *opcode = &state->memory[state->pc];
+
+	switch(*opcode){
+		case 0x00:{
+			break;
+		}
+		case 0x01:{
+			state->c = opcode[1];
+			state->b = opcode[2];
+			state->pc += 2;
+			break;
+		}
+		case 0x04:{
+			uint16_t answer = (uint16_t) state->b + 1;
+			zspflag(state, answer);
+			state->b = (uint8_t) answer;
+			break;
+		}
+		case 0x05:{
+			uint16_t answer = (uint16_t) state->b - 1;
+			zspflag(state, answer);
+			state->b = (uint8_t) answer;
+			break;
+		}
+	}
+	
+	state->pc += 1;
+}
+
+
 
 /*
  *codebuffer is pointer to 8080 assembly code
