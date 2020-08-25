@@ -130,6 +130,30 @@ uint8_t sbb(State8080* state, uint8_t value){
 
 }
 
+uint8_t ana(State8080* state, uint8_t value){
+
+	uint16_t answer = (uint16_t)state->a & (uint16_t)value;
+	zspcyflag(state, answer);
+	return (uint8_t)answer;
+
+}
+
+uint8_t xra(State8080* state, uint8_t value){
+
+	uint16_t answer = (uint16_t)state->a ^ (uint16_t)value;
+	zspcyflag(state, answer);
+	return (uint8_t)answer;
+
+}
+
+uint8_t ora(State8080* state, uint8_t value){
+
+	uint16_t answer = (uint16_t)state->a | (uint16_t)value;
+	zspcyflag(state, answer);
+	return (uint8_t)answer;
+
+}
+
 uint16_t hl(State8080* state){
 
 	return (state->h << 8) | state->l;
@@ -442,7 +466,74 @@ void Emulate8080Op(State8080* state){
 		case 0x9f:
 			state->a = sbb(state, state->a);
 			break;
-		
+		case 0xa0:
+			state->a = ana(state, state->b);
+			break;
+		case 0xa1:
+			state->a = ana(state, state->c);
+			break;
+		case 0xa2:
+			state->a = ana(state, state->d);
+			break;
+		case 0xa3:
+			state->a = ana(state, state->e);
+			break;
+		case 0xa4:
+			state->a = ana(state, state->h);
+			break;
+		case 0xa5:
+			state->a = ana(state, state->l);
+			break;
+		case 0xa7:
+			state->a = ana(state, state->a);
+			break;
+		case 0xa8:
+			state->a = xra(state, state->b);
+			break;
+		case 0xa9:
+			state->a = xra(state, state->c);
+			break;
+		case 0xaa:
+			state->a = xra(state, state->d);
+			break;
+		case 0xab:
+			state->a = xra(state, state->e);
+			break;
+		case 0xac:
+			state->a = xra(state, state->h);
+			break;
+		case 0xad:
+			state->a = xra(state, state->l);
+			break;
+		case 0xaf:
+			state->a = xra(state, state->a);
+			break;
+		case 0xb0:
+			state->a = ora(state, state->b);
+			break;
+		case 0xb1:
+			state->a = ora(state, state->c);
+			break;
+		case 0xb2:
+			state->a = ora(state, state->d);
+			break;
+		case 0xb3:
+			state->a = ora(state, state->e);
+			break;
+		case 0xb4:
+			state->a = ora(state, state->h);
+			break;
+		case 0xb5:
+			state->a = ora(state, state->l);
+			break;
+		case 0xb7:
+			state->a = ora(state, state->a);
+			break;
+		case 0xc1:
+			state->c = state->sp;
+			state->b = state->sp + 1;
+			state->sp = state->sp + 2;
+			break;
 	}
 	
 	state->pc += 1;
