@@ -56,6 +56,85 @@ int zspflag(State8080* state, uint16_t answer){
 
 	return 0;
 }
+
+int zspcyflag(State8080* state, uint16_t answer){
+
+	if((answer & 0xff) == 0){
+		state->cc.z = 1;
+	}else{
+		state->cc.z = 0;
+	}
+
+	if(answer & 0x80){
+		state->cc.s = 1;
+	}else{
+		state->cc.s = 0;
+	}
+
+	if(answer % 2 == 0){
+		state->cc.p = 1;
+	}else{
+		state->cc.p = 0;
+	}
+
+	state->cc.cy = (answer > 0xff);
+
+	return 0;
+}
+
+uint8_t inr(State8080* state, uint8_t value){
+
+	uint16_t answer = (uint16_t)value + 1;
+	zspflag(state, answer);
+	return (uint8_t)answer;	
+
+}
+
+uint8_t dcr(State8080* state, uint8_t value){
+
+	uint16_t answer = (uint16_t)value - 1;
+	zspflag(state, answer);
+	return (uint8_t)answer;
+
+}
+
+uint8_t add(State8080* state, uint8_t value){
+
+	uint16_t answer = (uint16_t)state->a + (uint16_t)value;
+	zspcyflag(state, answer);
+	return (uint8_t)answer;
+
+}
+
+uint8_t adc(State8080* state, uint8_t value){
+
+	uint16_t answer = (uint16_t)state->a + (uint16_t)value + (uint16_t)state->cc.cy;
+	zspcyflag(state, answer);
+	return (uint8_t)answer;
+
+}
+
+uint8_t sub(State8080* state, uint8_t value){
+
+	uint16_t answer = (uint16_t)state->a - (uint16_t)value;
+	zspcyflag(state, answer);
+	return (uint8_t)answer;
+
+}
+
+uint8_t sbb(State8080* state, uint8_t value){
+
+	uint16_t answer = (uint16_t)state->a - (uint16_t)value - (uint16_t)state->cc.cy;
+	zspcyflag(state, answer);
+	return (uint8_t)answer;
+
+}
+
+uint16_t hl(State8080* state){
+
+	return (state->h << 8) | state->l;
+
+}
 		
 void Emulate8080Op(State8080* state){
 
@@ -72,17 +151,298 @@ void Emulate8080Op(State8080* state){
 			break;
 		}
 		case 0x04:{
-			uint16_t answer = (uint16_t) state->b + 1;
-			zspflag(state, answer);
-			state->b = (uint8_t) answer;
+			state->b = inr(state, state->b);
 			break;
 		}
 		case 0x05:{
-			uint16_t answer = (uint16_t) state->b - 1;
-			zspflag(state, answer);
-			state->b = (uint8_t) answer;
+			state->b = dcr(state, state->b);
 			break;
 		}
+		case 0x0c:{
+			state->c  = inr(state, state->c);
+			break;
+		}
+		case 0x0d:{
+			state->c = dcr(state, state->c);
+			break;
+		}
+		case 0x14:
+			state->d = inr(state, state->d);
+			break;
+		case 0x15:
+			state->d = dcr(state, state->d);
+			break;
+		case 0x1c:
+			state->e = inr(state, state->e);
+			break;
+		case 0x1d:
+			state->e = dcr(state, state->e);
+			break;
+		case 0x24:
+			state->h = inr(state, state->h);
+			break;
+		case 0x25:
+			state->h = dcr(state, state->h);
+			break;
+		case 0x2c:
+			state->l = inr(state, state->l);
+			break;
+		case 0x2d:
+			state->l = dcr(state, state->l);
+			break;
+		case 0x2f:
+			state->a = ~(state->a);
+			break;
+		case 0x33:
+			state->sp = state->sp + 1;
+			break;
+		case 0x37:
+			state->cc.cy = 1;
+			break;
+		case 0x3b:
+			state->sp = state->sp - 1;
+			break;
+		case 0x3c:
+			state->a = inr(state, state->a);
+			break;
+		case 0x3d:
+			state->a = dcr(state, state->a);
+			break;
+		case 0x3f:
+			state->cc.cy = ~(state->cc.cy);
+			break;
+		case 0x40:
+			state->b = state->b;
+			break;
+		case 0x41:
+			state->b = state->c;
+			break;
+		case 0x42:
+			state->b = state->d;
+			break;
+		case 0x43:
+			state->b = state->e;
+			break;
+		case 0x44:
+			state->b = state->h;
+			break;
+		case 0x45:
+			state->b = state->l;
+			break;
+		case 0x47:
+			state->b = state->a;
+			break;
+		case 0x48:
+			state->c = state->b;
+			break;
+		case 0x49:
+			state->c = state->c;
+			break;
+		case 0x4a:
+			state->c = state->d;
+			break;
+		case 0x4b:
+			state->c = state->e;
+			break;
+		case 0x4c:
+			state->c = state->h;
+			break;
+		case 0x4d:
+			state->c = state->l;
+			break;
+		case 0x4f:
+			state->c = state->a;
+			break;
+		case 0x50:
+			state->d = state->b;
+			break;
+		case 0x51:
+			state->d = state->c;
+			break;
+		case 0x52:
+			state->d = state->d;
+			break;
+		case 0x53:
+			state->d = state->e;
+			break;
+		case 0x54:
+			state->d = state->h;
+			break;
+		case 0x55:
+			state->d = state->l;
+			break;
+		case 0x57:
+			state->d = state->a;
+			break;
+		case 0x58:
+			state->e = state->b;
+			break;
+		case 0x59:
+			state->e = state->c;
+			break;
+		case 0x5a:
+			state->e = state->d;
+			break;
+		case 0x5b:
+			state->e = state->e;
+			break;
+		case 0x5c:
+			state->e = state->h;
+			break;
+		case 0x5d:
+			state->e = state->l;
+			break;
+		case 0x5f:
+			state->e = state->a;
+			break;
+		case 0x60:
+			state->h = state->b;
+			break;
+		case 0x61:
+			state->h = state->c;
+			break;
+		case 0x62:
+			state->h = state->d;
+			break;
+		case 0x63:
+			state->h = state->e;
+			break;
+		case 0x64:
+			state->h = state->h;
+			break;
+		case 0x65:
+			state->h = state->l;
+			break;
+		case 0x67:
+			state->h = state->a;
+			break;
+		case 0x68:
+			state->l = state->b;
+			break;
+		case 0x69:
+			state->l = state->c;
+			break;
+		case 0x6a:
+			state->l = state->d;
+			break;
+		case 0x6b:
+			state->l = state->e;
+			break;
+		case 0x6c:
+			state->l = state->h;
+			break;
+		case 0x6d:
+			state->l = state->l;
+			break;
+		case 0x6f:
+			state->l = state->a;
+			break;
+		case 0x78:
+			state->a = state->b;
+			break;
+		case 0x79:
+			state->a = state->c;
+			break;
+		case 0x7a:
+			state->a = state->d;
+			break;
+		case 0x7b:
+			state->a = state->e;
+			break;
+		case 0x7c:
+			state->a = state->h;
+			break;
+		case 0x7d:
+			state->a = state->l;
+			break;
+		case 0x7f:
+			state->a = state->a;
+			break;
+		case 0x80:
+			state->a = add(state, state->b);
+			break;
+		case 0x81:
+			state->a = add(state, state->c);
+			break;
+		case 0x82:
+			state->a = add(state, state->d);
+			break;
+		case 0x83:
+			state->a = add(state, state->e);
+			break;
+		case 0x84:
+			state->a = add(state, state->h);
+			break;
+		case 0x85:
+			state->a = add(state, state->l);
+			break;
+		case 0x87:
+			state->a = add(state, state->a);
+			break;
+		case 0x88:
+			state->a = adc(state, state->b);
+			break;
+		case 0x89:
+			state->a = adc(state, state->c);
+			break;
+		case 0x8a:
+			state->a = adc(state, state->d);
+			break;
+		case 0x8b:
+			state->a = adc(state, state->e);
+			break;
+		case 0x8c:
+			state->a = adc(state, state->h);
+			break;
+		case 0x8d:
+			state->a = adc(state, state->l);
+			break;
+		case 0x8f:
+			state->a = adc(state, state->a);
+			break;
+		case 0x90:
+			state->a = sub(state, state->b);
+			break;
+		case 0x91:
+			state->a = sub(state, state->c);
+			break;
+		case 0x92:
+			state->a = sub(state, state->d);
+			break;
+		case 0x93:
+			state->a = sub(state, state->e);
+			break;
+		case 0x94:
+			state->a = sub(state, state->h);
+			break;
+		case 0x95:
+			state->a = sub(state, state->l);
+			break;
+		case 0x97:
+			state->a = sub(state, state->a);
+			break;
+		case 0x98:
+			state->a = sbb(state, state->b);
+			break;
+		case 0x99:
+			state->a = sbb(state, state->c);
+			break;
+		case 0x9a:
+			state->a = sbb(state, state->d);
+			break;
+		case 0x9b:
+			state->a = sbb(state, state->e);
+			break;
+		case 0x9c:
+			state->a = sbb(state, state->h);
+			break;
+		case 0x9d:
+			state->a = sbb(state, state->l);
+			break;
+		case 0x9f:
+			state->a = sbb(state, state->a);
+			break;
+		
 	}
 	
 	state->pc += 1;
