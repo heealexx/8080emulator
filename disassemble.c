@@ -154,6 +154,25 @@ uint8_t ora(State8080* state, uint8_t value){
 
 }
 
+int call(State8080* state, unsigned char* opcode){
+
+	uint16_t ret = state->pc + 2;
+	state->memory[state->sp-1] = (ret >> 8) & 0xff;
+	state->memory[state->sp-2] = (ret & 0xff);
+	state->sp = state->sp - 2;
+	state->pc = (opcode[2] << 8) | opcode[1];
+	return 0;
+
+}
+
+int ret(State8080* state){
+
+	state->pc = state->memory[state->sp] | (state->memory[state->sp+1] << 8);
+	state->sp += 2;
+	return 0;
+
+}
+
 uint16_t hl(State8080* state){
 
 	return (state->h << 8) | state->l;
@@ -183,7 +202,7 @@ void Emulate8080Op(State8080* state){
 			break;
 		}
 		case 0x0c:{
-			state->c  = inr(state, state->c);
+			state->c = inr(state, state->c);
 			break;
 		}
 		case 0x0d:{
@@ -529,10 +548,164 @@ void Emulate8080Op(State8080* state){
 		case 0xb7:
 			state->a = ora(state, state->a);
 			break;
+		case 0xc0:
+			if (state->cc.z == 0){
+				ret(state);
+			}
+			break;
 		case 0xc1:
 			state->c = state->sp;
 			state->b = state->sp + 1;
 			state->sp = state->sp + 2;
+			break;
+		case 0xc2:
+			if (0 == state->cc.z){
+				state->pc = (opcode[2] << 8) | opcode[1];
+			}else{
+				state->pc += 2;
+			}
+			break;
+		case 0xc3:
+			state->pc = (opcode[2] << 8) | opcode[1];
+			break;
+		case 0xc4:
+			if (state->cc.z == 0){
+				call(state, opcode);				
+			}else{
+				state->pc += 2;
+			}
+			break;
+		case 0xc8:
+			if (state->cc.z){
+				ret(state);
+			}
+			break;
+		case 0xc9:
+			ret(state);
+			break;
+		case 0xca:
+			if (state->cc.z){
+				state->pc = (opcode[2] << 8) | opcode[1];
+			}else{
+				state->pc += 2;
+			}
+			break;
+		case 0xcc:
+			if (state->cc.z){
+				call(state, opcode);
+			}else{
+				state->pc += 2;
+			}
+			break;
+		case 0xcd:
+			call(state, opcode);
+			break;
+		case 0xd0:
+			if (state->cc.cy == 0){
+				ret(state);
+			}
+			break;
+		case 0xd2:
+			if (0 == state->cc.cy){
+				state->pc = (opcode[2] << 8) | opcode[1];
+			}else{
+				state->pc += 2;
+			}
+			break;
+		case 0xd4:
+			if (0 == state->cc.cy){
+				call(state, opcode);
+			}else{
+				state->pc += 2;
+			}
+			break;
+		case 0xd8:
+			if (state->cc.cy){
+				ret(state, opcode);
+			}
+			break;
+		case 0xda:
+			if (state->cc.cy){
+				state->pc = (opcode[2] << 8) | opcode[1];
+			}else{
+				state->pc += 2;
+			}
+			break;
+		case 0xdc:
+			if (state->cc.cy){
+				call(state, opcode);
+			}else{
+				state->pc += 2;
+			}
+			break;
+		case 0xe0:
+			if (state->cc.p == 0){
+				ret(state);
+			}
+			break;
+		case 0xe2:
+			if (state->cc.p == 0){
+				state->pc = (opcode[2] << 8) | opcode[1];
+			}else{
+				state->pc += 2;
+			}
+			break;
+		case 0xe4:
+			if (state->cc.p == 0){
+				call(state, opcode);
+			}else{
+				state->pc += 2;
+			}
+			break;
+		case 0xe8:
+			if (state->cc.p){
+				ret(state);
+			}
+			break;
+		case 0xea:
+			if (state->cc.p){
+				state->pc = (opcode[2] << 8) | opcode[1];
+			}else{
+				state->pc += 2;
+			}
+			break;
+		case 0xec:
+			if (state->cc.p){
+				call(state, opcode);
+			}else{
+				state->pc += 2;
+			}
+			break;
+		case 0xf0:
+			if (state->cc.p){
+				ret(state);
+			}
+			break;
+		case 0xf2:
+			if (state->cc.s == 0){
+				state->pc = (opcode[2] << 8) | opcode[1];
+			}else{
+				state->pc += 2;
+			}
+			break;
+		case 0xf8:
+			if (state->cc.s){
+				ret(state);
+			}
+			break;
+		case 0xfa:
+			if (state->cc.s){
+				state->pc = (opcode[2] << 8) | opcode[1];
+			}else{
+				state->pc += 2;
+			}
+			break;
+		case 0xfc:
+			if (state->cc.s){
+				call(state, opcode);
+			}else{
+				state->pc += 2;
+			}
 			break;
 	}
 	
