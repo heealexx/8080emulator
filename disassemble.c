@@ -671,6 +671,11 @@ void Emulate8080Op(State8080* state){
 				state->pc += 2;
 			}
 			break;
+		case 0xc5:
+			state->memory[state->sp - 2] = state->c;
+			state->memory[state->sp - 1] = state->b;
+			state->sp -= 2;
+			break;
 		case 0xc8:
 			if (state->cc.z){
 				ret(state);
@@ -701,6 +706,11 @@ void Emulate8080Op(State8080* state){
 				ret(state);
 			}
 			break;
+		case 0xd1:
+			state->e = state->memory[state->sp];
+			state->d = state->memory[state->sp + 1];
+			state->sp += 2;
+			break;
 		case 0xd2:
 			if (0 == state->cc.cy){
 				state->pc = (opcode[2] << 8) | opcode[1];
@@ -717,6 +727,11 @@ void Emulate8080Op(State8080* state){
 			}else{
 				state->pc += 2;
 			}
+			break;
+		case 0xd5:
+			state->memory[state->sp - 2] = state->e;
+			state->memory[state->sp - 1] = state->d;
+			state->sp -= 2;
 			break;
 		case 0xd8:
 			if (state->cc.cy){
@@ -745,6 +760,11 @@ void Emulate8080Op(State8080* state){
 				ret(state);
 			}
 			break;
+		case 0xe1:
+			state->l = state->memory[state->sp];
+			state->h = state->memory[state->sp + 1];
+			state->sp += 2;
+			break;
 		case 0xe2:
 			if (state->cc.p == 0){
 				state->pc = (opcode[2] << 8) | opcode[1];
@@ -752,12 +772,26 @@ void Emulate8080Op(State8080* state){
 				state->pc += 2;
 			}
 			break;
+		case 0xe3:{
+			uint8_t l = state->l;
+			uint8_t h = state->h;
+			state->l = state->memory[state->sp];
+			state->h = state->memory[state->sp + 1];
+			state->memory[state->sp] = l;
+			state->memory[state->sp + 1] = h;
+			break;
+		}
 		case 0xe4:
 			if (state->cc.p == 0){
 				call(state, opcode);
 			}else{
 				state->pc += 2;
 			}
+			break;
+		case 0xe5:
+			state->memory[state->sp - 2] = state->l;
+			state->memory[state->sp - 1] = state->h;
+			state->sp -= 2;
 			break;
 		case 0xe6:{
 			uint8_t answer = state->a & opcode[1];
@@ -797,6 +831,17 @@ void Emulate8080Op(State8080* state){
 				ret(state);
 			}
 			break;
+		case 0xf1:{
+			uint8_t psw = state->memory[state->sp];
+			state->cc.z = ((psw & 0x01) == 0x01);
+			state->cc.s = ((psw & 0x02) == 0x02);
+			state->cc.p = ((psw & 0x04) == 0x04);
+			state->cc.cy = ((psw & 0x08) == 0x05);
+			state->cc.ac = ((psw & 0x10) == 0x10);
+			state->a = state->memory[state->sp + 1];
+			state->sp += 2;
+			break;
+		}
 		case 0xf2:
 			if (state->cc.s == 0){
 				state->pc = (opcode[2] << 8) | opcode[1];
@@ -807,6 +852,13 @@ void Emulate8080Op(State8080* state){
 		case 0xf3:
 			state->cc.interrupt_enabled = 0;
 			break;
+		case 0xf5:{
+			uint8_t psw = (state->cc.z << 1 | state->cc.p << 2 | state->cc.cy << 3 | state->cc.ac << 4);
+			state->memory[state->sp - 2] = psw;
+			state->memory[state->sp - 1] = state->a;
+			state->sp -= 2;
+			break;
+		}
 		case 0xf6:
 			state->a = ora(state, opcode[1]);
 			break;
@@ -814,6 +866,9 @@ void Emulate8080Op(State8080* state){
 			if (state->cc.s){
 				ret(state);
 			}
+			break;
+		case 0xf9:
+			state->sp = (state->h << 8 | state->l);
 			break;
 		case 0xfa:
 			if (state->cc.s){
